@@ -1,3 +1,4 @@
+from datetime import datetime
 from random import choice, shuffle
 from peon import Peon
 import numpy as np
@@ -24,7 +25,18 @@ class Partida:
         self.h_wall = '-'
         self.v_wall = '|'
         
-    def actualizar_tablero():
+        self.walls_restantes = 10
+        self.movimientos_restantes = 200
+        
+    def actualizar_data(self, data):
+        
+        self.data_actual = data
+        self.str_board = data['board']
+        self.np_board = self.to_numpy(self.str_board)
+        self.walls_restantes = int(data['walls'])
+        self.movimientos_restantes = int(data['remaining_moves'])
+        
+        
         pass
     
     def print_board(self):
@@ -41,16 +53,7 @@ class Partida:
     
     def to_str(self,np_board:np.array):
         return ''.join(list(np_board.reshape(289)))
-    
-    
-    def jugarMovimiento(self, movimiento):
-        pass
-    
-    
-    def mover_adelante(self, peon) -> list:        
-        return peon[0] +2 if self.side=='N'else peon[0] -2, peon[1]
-        
-        
+          
     
     def decidirMovimiento(self,data):
         'Decide el siguiente movimiento y retorna el dict de respuesta apra enviar al servidor'
@@ -76,8 +79,7 @@ class Partida:
     def detectarPeones(self):
        
         return [ Peon(int(i),int(j),self.np_board,self.side) for i,j in zip(*np.where( self.np_board == self.side )) ]
-    
-    
+       
  
     def testmoverPeon(self,data):
         self.print_board()
@@ -99,9 +101,9 @@ class Partida:
             self.str_board = self.to_str(self.np_board)
         
         return Move(data,peon.row, peon.col, to_row, to_col).to_dict() if (to_row is not None and to_col is not None )else False , self.str_board
-        
-    def calcularOpciones(self,data):
-        self.data_actual = data
+    
+    def calcularOpciones(self):
+        # self.data_actual = data
         # DETECTAR TODOS LOS PEONES
         self.peones = self.detectarPeones()
         # PARA CADA PEON
@@ -110,13 +112,12 @@ class Partida:
             if peon.row != 16:
                 mov,puntos = peon.mejorMovimiento()   
                 self.mejores_opciones = {i:[mov,puntos]}         
-            else: print('llego')
+            # else: print('llego')
         return len(self.mejores_opciones)
 
     
     def elegirMejorMovimiento(self):
-        
-        
+                
         peon_index,[best_move,puntaje] = sorted(self.mejores_opciones.items(),  key= lambda x: x[1][1] )[-1]
         return self.moverPeon(peon_index, best_move )
         
@@ -130,6 +131,7 @@ class Partida:
         self.np_board[ peon.row, peon.col ] = ' '
         # self.print_board()
         self.str_board = self.to_str(self.np_board)
+        
         return Move(self.data_actual,peon.row, peon.col, to_row, to_col).to_dict() , self.str_board #if (to_row is not None and to_col is not None )else False 
         
         
@@ -148,20 +150,20 @@ def armar_tablero_str() ->str:
         ['N', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', 'N'], # 0
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 1
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 2
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 3
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '-', '*', '-',' ', ' ', ' ', ' '], # 3
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '|', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 4
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '*', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 5
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'N', '|', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 6
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '|', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 6
         [' ', ' ', ' ', ' ', ' ', ' ', '-', '*', '-', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 7
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 8
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', '-', '*', '-'], # 8
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 9
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 10
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 11
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '-','*', '-', ' ', ' '], # 11
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 12
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 13
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 14
-        [' ', ' ', ' ', ' ', '-', '*', '-', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 15
-        ['N', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' ']] # 16
+        ['-', '*', '-', ' ', '-', '*', '-', '*', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 15
+        ['N', ' ', ' ', ' ', ' ', ' ', ' ', '|', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' ']] # 16
             
             )        
                 
@@ -216,13 +218,16 @@ def multiples_peones_inteligentes(side='N'):
     while testeando:
         
         testeando = False
-        if partidita.calcularOpciones(data['data']):
+        t1 = datetime.now()
+        partidita.actualizar_data(data['data'])
+        if partidita.calcularOpciones():
             testeando, board = partidita.elegirMejorMovimiento()
             partidita.print_board()
             time.sleep(0.1)
+            partidita.np_board = None
         
         data['data']['board'] = board
-  
+        print('tiempo:',datetime.now() -t1 )
   
     
 class Action:

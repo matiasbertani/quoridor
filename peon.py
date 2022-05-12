@@ -34,7 +34,10 @@ class Peon:
         self.h_wall = '-'
         self.v_wall = '|'
         
-        self.point_behind_wall = -30
+        self.point_behind_wall = -5
+        
+        self.hay_paso_izq = True
+        self.hay_paso_der = True
         
         self.col_izq_vacia = int()
         self.col_der_vacia = self.len_tablero_peones - 1  
@@ -51,9 +54,9 @@ class Peon:
             # obtener columna_puntuada para columna de ubicacion actual
             self.tablero_peones[:, self.col_tp] = self.puntuarCol(self.row, self.col, axis='col')
             # obtener columna_puntuada para columna de ubicacion PREVIA
-            self.tablero_peones[:, self.col_izq_vacia] = self.puntuarCol( self.row, self.col_izq_vacia , axis='col') # self.col - 2, self.col_tp - 1
+            self.tablero_peones[:, self.col_izq_vacia] = self.puntuarCol( self.row, int(self.col_izq_vacia *2) , axis='col') # self.col - 2, self.col_tp - 1
             # obtener columna_puntuada para columna de ubicacion POSTERIOR
-            self.tablero_peones[:, self.col_der_vacia] = self.puntuarCol( self.row, self.col_der_vacia,  axis='col' )#self.col_tp + 1 , self.col + 2
+            self.tablero_peones[:, self.col_der_vacia] = self.puntuarCol( self.row, int(self.col_der_vacia * 2),  axis='col' )#self.col_tp + 1 , self.col + 2
             # obtener row
             self.tablero_peones[self.row_tp, :] = self.puntuarCol( self.row, self.col ,  axis='row' )
             
@@ -68,13 +71,13 @@ class Peon:
             # temp_board = np.transpose(self.tablero.copy()) # esta paa cuando haya que rotar, o hacerlo en una funcion afuera antes de devolver los datos
             
             array_puntuado =  np.zeros(self.len_tablero_peones)
-            if self.hayWall( col, axis= axis):
+            if self.hayWall( row, axis= axis):
                 # print('acciones por si hay ared')
                 
                 #obtiene los indices de las paredes en la misma row
                 
                 # REPETIR para CADA PARED
-                for wall in self.nextWalls(col, axis):
+                for wall in self.nextWalls(row, axis):
                     # SEGUN la posicion de la PARED respecto al peon:
                     
                     
@@ -83,7 +86,7 @@ class Peon:
                     if wall < col:
                         # todos los lugares a la izquierda del peon se vuelve -100
                         thresh = int( (wall-1)/2)
-                        array_puntuado [ thresh: ] = self.point_behind_wall
+                        array_puntuado [ :thresh+1 ] = self.point_behind_wall
                         pass
                             
                     # si la pared esta a la DERECHA:
@@ -127,31 +130,37 @@ class Peon:
     
     def nextWalls(self,col, axis ='col'):
         
-        if axis== 'col':
-            return [i[0] for i in   np.where(self.tablero[:,col] == self.h_wall)]
+        if axis== 'col':            
+            return [int(i[0]) for i in   np.where(self.tablero[:,col] == self.h_wall)]
         else:
-            return [i[0] for i in   np.where(self.tablero[col,:] == self.v_wall)]
+            return [int(i[0]) for i in   np.where(self.tablero[col,:] == self.v_wall)]
         
-    def hayWall(self, col, axis='col'):
+    def hayWall(self, col, axis='col',x_orient='izquierda',y_orient='adelante'):
         if axis == 'col':
             # print(self.tablero[:,col])
-            return self.h_wall in self.tablero[:,col]
+            if y_orient=='adelante':
+                return self.h_wall in self.tablero[self.row:,col]
+            else:
+                return self.h_wall in self.tablero[:self.row,col]
         else :
+            
             return self.v_wall in self.tablero[col,:]
     
     def columnasProximasVacias(self):
         if not self.limite_izquierda : 
             for col in list(range(self.col_tp))[::-1]:
                 if not self.hayWall(int(col*2)): 
-                    self.col_izq_vacia = col
-                    print()
-                    break
+                    self.col_izq_vacia = col                    
+                    break 
+            else: self.hay_paso_izq = False
                 
         if not self.limite_derecha : 
             for col in list(range(self.col_tp +1, self.len_tablero_peones )):
                 if not self.hayWall(int(col*2)): 
                     self.col_der_vacia = col
-                    break
+                    break 
+            else: self.hay_paso_der = False
+            
                     
             
         
@@ -245,8 +254,8 @@ class Peon:
         # print(movimiento)    
         # print(self.tablero_peones)
         # print(self.tablero_peones[p_row_desde:p_row_hasta,p_col_desde:p_col_hasta])
-        
-        return  2*gx+int((camino_h.sum() + camino_v.sum())/(len(camino_v) +len(camino_h)))
+        distancia = 3*(len(camino_v) +len(camino_h))
+        return  2.5*gx+int((camino_h.sum() + camino_v.sum())/(distancia))
     
     def armarDicMovimientos(self):
         
@@ -285,8 +294,8 @@ class Peon:
     
     
 def test_puntaje_tablero(table):
-    p_row = 4
-    p_col = 8
+    p_row = 16
+    p_col = 0
     
   
     table[p_row, p_col] = 'N'
@@ -299,15 +308,15 @@ def test_puntaje_tablero(table):
 
 def test_movimientos_validos(table):
     t1 = datetime.now()
-    p_row = 4
-    p_col = 8    
+    p_row = 10
+    p_col = 12   
     
     
   
     table[p_row, p_col] = 'N'
     print(np.array(list(range(17))).astype('str'))
     print(table)
-    p = Peon(p_row,p_col, table)
+    p = Peon(p_row,p_col, table,'N')
     
     p.print_movimientos()
     
@@ -324,23 +333,25 @@ def test_movimientos_validos(table):
 if __name__ == '__main__':
     table = np.array([
         
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '],
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '],
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '],
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '],
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '|', ' ', ' ', ' ',' ', ' ', ' ', ' '],
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '*', ' ', ' ', ' ',' ', ' ', ' ', ' '],
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '|', ' ', ' ', ' ',' ', ' ', ' ', ' '],
-        [' ', ' ', ' ', ' ', ' ', ' ', '-', '*', '-', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '],
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '],
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '],
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '],
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '],
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '],
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '],
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '],
-        [' ', ' ', ' ', ' ', '-', '*', '-', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '],
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' ']]
+        # 0    1    2    3    4    5    6    7    8    9   10   11   12  13   14   15   16    
+        ['N', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 0
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 1
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 2
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 3
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '|', '-', '*', '-',' ', ' ', ' ', ' '], # 4
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '*', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 5
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'N', '|', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 6
+        [' ', ' ', ' ', ' ', ' ', ' ', '-', '*', '-', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 7
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', '-', '*', '-'], # 8
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 9
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 10
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '-','*', '-', ' ', ' '], # 11
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 12
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 13
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', '|', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 14
+        ['-', '*', '-', ' ', '-', '*', '-', '*', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 15
+        ['N', ' ', ' ', ' ', ' ', ' ', ' ', '|', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' ']] # 16
+
             
             )
     
