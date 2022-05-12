@@ -108,50 +108,7 @@ class Bot:
         pass
     
     
-def test_partida_1(side='S'):
-    """Priebas de bot off-line miviendo hacia delante
-    """
-    posiciones_iniciales = [ [ [i*2,j*2] for j in range(0,9,4) ] for i in range(0,9,8)]
-    
-    tablero_str = ' '*289
-    tablero_np = np.array(  list(tablero_str) ).reshape(17,17)
-    
-    for posiciones, peon_side in zip(posiciones_iniciales, ['N','S']):
-        for i,j in posiciones:
-            tablero_np[i][j] = peon_side
-    
-    # for i in tablero_np:
-    #     print(i)
-    
-    tablero_str = ''.join(list(tablero_np.reshape(289)))
-    del(tablero_np)
-    
-    data = {
-                "event": "your_turn",
-                "data": {
-                    "player_2": "uno",
-                    "player_1": "dos",
-                    "score_2": 0.0,
-                    "walls": 10.0,
-                    "score_1": 0.0,
-                    "side": side,
-                    "remaining_moves": 200,
-                    "board": tablero_str,
-                    "turn_token": "tokencito",
-                    "game_id": "ab16e71c-caeb-11eb-975e-0242c0a80004"
-                }
-            }
-    
-    
-    partidita = Partida(data['data'])
-    testeando = True        
-    while testeando:
-        
-        testeando, board = partidita.decidirMovimiento(data['data'])
-        data['data']['board'] = board
-        
-        
-        
+
     
     
     

@@ -1,4 +1,5 @@
 from random import choice, shuffle
+from peon import Peon
 import numpy as np
 import time
 
@@ -70,102 +71,114 @@ class Partida:
         self.np_board[peon[0]][peon[1]] = ' '
         self.str_board = self.to_str(self.np_board)
         return Move(data,peon[0],peon[1],to_row,to_col).to_dict() if (to_row is not None and to_col is not None )else False , self.str_board
+ 
+ 
+    def detectarPeones(self):
         
-    def puntuarBoard(self):
-        """Genera la matriz total de puntaje
-        Le da puntaje a cla columna donde se encuentra el peon
-        a las columnas 2 laterales ( en cas de haberse movido a derecha)
-        y la horizontal o row donde se encuentra el poeon que esta llena de ceros, salvo 
+        return [ [i,j] for i,j in zip(*np.where( self.np_board == self.side )) ]
+ 
+    def testmoverPeon(self,data):
+        self.print_board()
+        time.sleep(0.1)
+        peones = self.detectarPeones()
+        to_row, to_col =  None, None
+        prow, pcol = peones[0]
+        if prow != 16:
+            peon = Peon(prow, pcol, self.np_board.copy())
+            mov = list(peon.armarDicMovimientos().keys())[0]
+            print(peon.dic_movimientos)
+            to_row, to_col = peon.mapa_movimiento[mov]
+            # self.print_board()
+            self.np_board[ to_row , to_col ] = self.side
+            # self.print_board()
+            self.np_board[ peon.row, peon.col ] = ' '
+            # self.print_board()
+            self.str_board = self.to_str(self.np_board)
         
-        con esta matriz obtenida en esta dfuncion, voy a calcular fuera de 
-        """
-        for p_row, p_col in self.peones:
-            
-            
-            
-            pass    
-    
-    def ponitBoard(self,peon):
-        p_row, p_col = peon
+        return Move(data,peon.row, peon.col, to_row, to_col).to_dict() if (to_row is not None and to_col is not None )else False , self.str_board
         
-        # obtener columna_puntuada para columna de ubicacion actual
-        # obtener columna_puntuada para columna de ubicacion PREVIA
-        # obtener columna_puntuada para columna de ubicacion POSTERIOR
-        # obtener row
+    def calcularOpciones(self,data):
+        
+        # DETECTAR TODOS LOS PEONES
+        peones = self.detectarPeones()
+        # PARA CADA PEON
+            # calcular sus movimientos
+            # guardar el mejor en un dic con el indice del peon
+            # 
         pass
     
-      
-    def getOnlyCasilleros(self):
+    def moverPeon(self):
         pass
-        
-      
-    def puntuarCol(self,row, col, axis='col',side='N') -> np.array:
-        
-        
-        if axis == 'row':
-            temp_board = np.transpose(self.np_board)
-            ret =  np.array([0 for i in range(9)])
-            if self.hayWall(col, axis= axis):
-                print('acciones por si hay ared')
-                self.nextToWall(col)
-                #obtiene los indices de las paredes en la misma row
+ 
+def armar_tablero_str() ->str:
+    # tablero_str = ' '*289
+    # tablero_np = np.array(  list(tablero_str) ).reshape(17,17)
+    
+    
+    # for posiciones, peon_side in zip(peones, ['N','S']):
+    #     for i,j in posiciones:
+    #             tablero_np[i][j] = peon_side
                 
-                # REPETIR para cada pared
-                    # segun la posicion de la pred respecto al peon:
-                        # si la pared esta a la IZQUEIRDA 
-                            # todos los lugares a la izquierda del peon se vuelve -100
-                        # si la pared esta a la DERECHA:
-                            # todas los lugares a la derecha de la pared se vuelven -100 
+    table = np.array([
+        # 0    1    2    3    4    5    6    7    8    9   10   11   12  13   14   15   16    
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 0
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 1
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 2
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 3
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '|', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 4
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '*', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 5
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'N', '|', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 6
+        [' ', ' ', ' ', ' ', ' ', ' ', '-', '*', '-', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 7
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 8
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 9
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 10
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 11
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 12
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 13
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 14
+        [' ', ' ', ' ', ' ', '-', '*', '-', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 15
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' ']] # 16
             
-            # retornan el fila ROW  puntuada
-            
-        else: 
-            
-            temp_board = self.np_board.copy()
-        
-            ret  = np.array([-2 if i<=row else row for i in range(9)])*self.col_points
-            
-            if self.hayWall(col): 
-                # REPETIR para cada pared:
-                    # segun la posicion de la pred respecto al peon:
-                        # si la pared esta a la DEBAJO  en en caso de ser NORTE O ARRIBA en caso de ser SUR ( VER DEROTAR TABLERO SEGUN LO QU TOQUE APRA MANTENER MISMAS REGLAS) 
-                            # todos los lugares a la izquierda del peon se vuelve -100
-                        # si  la
+            )        
                 
-                prev ,siguie = self.nextToWall(col)
-                thresh = siguie if self.side == 'N' else prev
-                ret[thresh:] = -100            
-            
-            return ret
+                
         
-    
-        
-        
-    def columas_casillerps(self,col):
-    
-        return self.board[0::2,col] 
-
-
-
-
-
-        # pyedo hace un sol hay pared con 
-
-    def nextToWall(self,col):
-        
-        #Elegir la  pared que esete inmediatemente despues POR AHORA CONEMPLO QUE ME PONEN UNA SOLA PARED
-        l = [i[0] for i in   np.where(self.board[:,col] == self.wall)]
-        y = l[0]
-        return int( (y-1)/2 ), int( (y+1)/2 )
-    
-    def hayWall(self, col, axis='col'):
-        return self.wall in self.board[:,col]
-
-    def hayParedRow(self, row):        
-        return '-' in self.board[row,:]
+    return ''.join(list(table.reshape(289)))
             
     
-  
+def test_avance_inteligente_peon(side='N'):
+    """Priebas de bot off-line miviendo hacia delante
+    """
+    
+    
+    tablero_str = armar_tablero_str()
+    
+    
+    data = {
+                "event": "your_turn",
+                "data": {
+                    "player_2": "uno",
+                    "player_1": "dos",
+                    "score_2": 0.0,
+                    "walls": 10.0,
+                    "score_1": 0.0,
+                    "side": side,
+                    "remaining_moves": 200,
+                    "board": tablero_str,
+                    "turn_token": "tokencito",
+                    "game_id": "ab16e71c-caeb-11eb-975e-0242c0a80004"
+                }
+            }
+    
+    
+    partidita = Partida(data['data'])
+    testeando = True        
+    while testeando:
+        print()
+        testeando, board = partidita.moverPeon(data['data'])
+        data['data']['board'] = board
+        
+
   
   
   
@@ -232,4 +245,6 @@ class Wall(Action):
 
 
 if __name__ == '__main__':
+    
+    test_avance_inteligente_peon()
     pass
