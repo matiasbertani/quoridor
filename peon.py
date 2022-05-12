@@ -5,7 +5,7 @@ from datetime import datetime
 
 class Peon:
     
-    def __init__(self, x:int ,y:int , board:np.array) -> None:
+    def __init__(self, x:int ,y:int , board:np.array,side) -> None:
         
         self.row = x
         self.col = y
@@ -16,7 +16,7 @@ class Peon:
         self.row_tp = int(self.row/2)
         self.col_tp = int(self.col/2)
         # self.tablero_puntuado = np.zeros((17,17))
-        self.side = str()
+        self.side = side
         
         # DIMENSIONES DE TABLEROS
         self.len_tablero = 17
@@ -69,7 +69,7 @@ class Peon:
             
             array_puntuado =  np.zeros(self.len_tablero_peones)
             if self.hayWall( col, axis= axis):
-                print('acciones por si hay ared')
+                # print('acciones por si hay ared')
                 
                 #obtiene los indices de las paredes en la misma row
                 
@@ -185,16 +185,20 @@ class Peon:
         # --------- PEONES A LOS LADOS -------------------- 
         
         # PEONES enemigos o amigos a los COSTADOS 
-        peon_izquierda = self.tablero[ self.row , self.col + 2 ] in ['N','S'] if not self.limite_izquierda else self.limite_izquierda 
-        peon_derecha = self.tablero[ self.row , self.col - 2 ] in ['N','S'] if not self.limite_derecha else self.limite_derecha
+        peon_izquierda = self.tablero[ self.row , self.col - 2 ] in ['N','S'] if not self.limite_izquierda else self.limite_izquierda 
+        peon_derecha = self.tablero[ self.row , self.col + 2 ] in ['N','S'] if not self.limite_derecha else self.limite_derecha
         
         # PEONES enemigos o propio a los ATRAS
         peon_atras = self.tablero[ self.row - 2 , self.col ] in ['N','S'] if not self.limite_atras else self.limite_atras
+        if not self.limite_adelante:
+            a=self.tablero[ self.row + 2 , self.col ]
+            b= self.tablero[ self.row + 2 , self.col ] == self.side 
         peon_propio_adelante = self.tablero[ self.row + 2 , self.col ] == self.side if not self.limite_adelante else self.limite_adelante
         
         # ------------------------------------
         
         #esti en realidad es una ventaja plus que hay que ver como usar. seguro enla parte de puntuar movimiento
+        # a =self.tablero[ self.row + 2 , self.col ] == self.side 
         peon_enemigo_adelante = self.tablero[ self.row + 2 , self.col ] == self.side if not self.limite_adelante else self.limite_adelante
         
         # considerar tambien si hay un peon enemigo al costado, o un peon amigo par prohibir ese movimientos
@@ -255,7 +259,10 @@ class Peon:
         self.dic_movimientos = dict(sorted(self.dic_movimientos.items(), key =  lambda x: x[1])[::-1]) 
         return self.dic_movimientos
         
-    
+    def mejorMovimiento(self) -> str:
+        
+        return list(self.armarDicMovimientos().items())[0]
+        
         
 
 

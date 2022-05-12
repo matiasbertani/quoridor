@@ -74,17 +74,20 @@ class Partida:
  
  
     def detectarPeones(self):
-        
-        return [ [i,j] for i,j in zip(*np.where( self.np_board == self.side )) ]
+       
+        return [ Peon(int(i),int(j),self.np_board,self.side) for i,j in zip(*np.where( self.np_board == self.side )) ]
+    
+    
  
     def testmoverPeon(self,data):
         self.print_board()
         time.sleep(0.1)
         peones = self.detectarPeones()
+        peon = peones[0] 
         to_row, to_col =  None, None
-        prow, pcol = peones[0]
-        if prow != 16:
-            peon = Peon(prow, pcol, self.np_board.copy())
+        
+        if peon.row != 16:
+            
             mov = list(peon.armarDicMovimientos().keys())[0]
             print(peon.dic_movimientos)
             to_row, to_col = peon.mapa_movimiento[mov]
@@ -98,17 +101,38 @@ class Partida:
         return Move(data,peon.row, peon.col, to_row, to_col).to_dict() if (to_row is not None and to_col is not None )else False , self.str_board
         
     def calcularOpciones(self,data):
-        
+        self.data_actual = data
         # DETECTAR TODOS LOS PEONES
-        peones = self.detectarPeones()
+        self.peones = self.detectarPeones()
         # PARA CADA PEON
-            # calcular sus movimientos
-            # guardar el mejor en un dic con el indice del peon
-            # 
-        pass
+        self.mejores_opciones = {}
+        for i,peon in enumerate(self.peones):
+            if peon.row != 16:
+                mov,puntos = peon.mejorMovimiento()   
+                self.mejores_opciones = {i:[mov,puntos]}         
+            else: print('llego')
+        return len(self.mejores_opciones)
+
     
-    def moverPeon(self):
-        pass
+    def elegirMejorMovimiento(self):
+        
+        
+        peon_index,[best_move,puntaje] = sorted(self.mejores_opciones.items(),  key= lambda x: x[1][1] )[-1]
+        return self.moverPeon(peon_index, best_move )
+        
+    
+    def moverPeon(self,peon_index,movimiento):
+        peon = self.peones[peon_index]
+        to_row, to_col = peon.mapa_movimiento[movimiento]
+        # self.print_board()
+        self.np_board[ to_row , to_col ] = self.side
+        # self.print_board()
+        self.np_board[ peon.row, peon.col ] = ' '
+        # self.print_board()
+        self.str_board = self.to_str(self.np_board)
+        return Move(self.data_actual,peon.row, peon.col, to_row, to_col).to_dict() , self.str_board #if (to_row is not None and to_col is not None )else False 
+        
+        
  
 def armar_tablero_str() ->str:
     # tablero_str = ' '*289
@@ -121,7 +145,7 @@ def armar_tablero_str() ->str:
                 
     table = np.array([
         # 0    1    2    3    4    5    6    7    8    9   10   11   12  13   14   15   16    
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 0
+        ['N', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', 'N'], # 0
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 1
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 2
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 3
@@ -137,7 +161,7 @@ def armar_tablero_str() ->str:
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 13
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 14
         [' ', ' ', ' ', ' ', '-', '*', '-', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 15
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' ']] # 16
+        ['N', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' ']] # 16
             
             )        
                 
@@ -145,16 +169,8 @@ def armar_tablero_str() ->str:
         
     return ''.join(list(table.reshape(289)))
             
-    
-def test_avance_inteligente_peon(side='N'):
-    """Priebas de bot off-line miviendo hacia delante
-    """
-    
-    
-    tablero_str = armar_tablero_str()
-    
-    
-    data = {
+def getData(side,tablero_str): 
+    return {
                 "event": "your_turn",
                 "data": {
                     "player_2": "uno",
@@ -170,16 +186,42 @@ def test_avance_inteligente_peon(side='N'):
                 }
             }
     
+
+    
+def test_avance_inteligente_peon(side='N'):
+    """Priebas de bot off-line miviendo hacia delante
+    """
+    
+    
+    tablero_str = armar_tablero_str()    
+    data = getData(side,tablero_str)
+    
     
     partidita = Partida(data['data'])
     testeando = True        
     while testeando:
         print()
-        testeando, board = partidita.moverPeon(data['data'])
+        testeando, board = partidita.testmoverPeon(data['data'])
+
         data['data']['board'] = board
         
 
-  
+def multiples_peones_inteligentes(side='N'):
+    tablero_str = armar_tablero_str()    
+    data = getData(side,tablero_str)
+    
+    
+    partidita = Partida(data['data'])
+    testeando = True        
+    while testeando:
+        
+        testeando = False
+        if partidita.calcularOpciones(data['data']):
+            testeando, board = partidita.elegirMejorMovimiento()
+            partidita.print_board()
+            time.sleep(0.1)
+        
+        data['data']['board'] = board
   
   
     
@@ -245,6 +287,6 @@ class Wall(Action):
 
 
 if __name__ == '__main__':
-    
-    test_avance_inteligente_peon()
+    # test_avance_inteligente_peon()
+    multiples_peones_inteligentes()
     pass
