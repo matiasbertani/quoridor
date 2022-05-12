@@ -1,27 +1,66 @@
-class Tablero:
-    def __init__(self) -> None:
-        # que el tablero sea una mtrz numpy 18x18
-        #espacios pares
-        pass
-    
-    
-    
-    
-class Peon:
-    
-    def __init__(self,i,j, np_board) -> None:
-        
-        pass
-    
-    
-    def movimientosValidos() -> list:
-        pass
-    
-    
+import asyncio
+import json
+from random import randint
+import time
+import sys
+import websockets
 
-class Pared:
-    pass
-    
+
+async def send(websocket, action, data):
+    message = json.dumps(
+        {
+            'action': action,
+            'data': data,
+        }
+    )
+    print(message)
+    await websocket.send(message)
+
+
+async def start(auth_token):
+    uri = "wss://4yyity02md.execute-api.us-east-1.amazonaws.com/ws?token={}".format(auth_token)
+    while True:
+        try:
+            print('connection to {}'.format(uri))
+            async with websockets.connect(uri) as websocket:
+                await play(websocket)
+        except KeyboardInterrupt:
+            print('Exiting...')
+            break
+        except Exception:
+            print('connection error!')
+            time.sleep(3)
+
+
+async def play(websocket):
+    while True:
+        try:
+            request = await websocket.recv()
+            print(f"< {request}")
+            request_data = json.loads(request)
+            if request_data['event'] == 'update_user_list':
+                pass
+            if request_data['event'] == 'gameover':
+                pass
+            if request_data['event'] == 'challenge':
+                # if request_data['data']['opponent'] == 'favoriteopponent':
+                await send(
+                    websocket,
+                    'accept_challenge',
+                    {
+                        'challenge_id': request_data['data']['challenge_id'],
+                    },
+                )
+            if request_data['event'] == 'your_turn':
+                await process_your_turn(websocket, request_data)
+        except KeyboardInterrupt:
+            print('Exiting...')
+            break
+        except Exception as e:
+            print('error {}'.format(str(e)))
+            break  # force login again
+
+
 
 async def process_your_turn(websocket, request_data):
     if randint(0, 4) > 0:

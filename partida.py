@@ -222,7 +222,8 @@ def multiples_peones_inteligentes(side='N'):
         partidita.actualizar_data(data['data'])
         if partidita.calcularOpciones():
             testeando, board = partidita.elegirMejorMovimiento()
-            partidita.print_board()
+            print(testeando)
+            # partidita.print_board()
             time.sleep(0.1)
             partidita.np_board = None
         

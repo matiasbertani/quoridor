@@ -67,7 +67,7 @@ class Bot:
                 break  # force login again
             
   
-    async def send(websocket, action, data):
+    async def send(websocket, respuesta:dict):
         """Send an action to the server by the websocket
 
         Args:
@@ -75,14 +75,25 @@ class Bot:
             action (_type_): _description_
             data (_type_): _description_
         """
-        message = json.dumps(
-            {
-                'action': action,
-                'data': data,
-            }
-        )
-        print(message)
+        message = json.dumps(respuesta)
+        # print(message)
         await websocket.send(message)
+    
+    
+    async def process_your_turn(self,websocket, request_data):
+        
+        game_id = request_data['data']['game_id']
+        if request_data['data']['game_id'] not in self.PARTIDAS:
+            self.PARTIDAS[ game_id  ] = Partida(request_data['data'])
+        partida: Partida = self.PARTIDAS[ game_id ]
+        
+        partida.actualizar_data(request_data['data'])
+        if partida.calcularOpciones():
+            movimiento , _ = partida.elegirMejorMovimiento()
+            partida.print_board()   
+        await self.send( websocket, movimiento)
+
+
     
     
     def desafiar(self):
