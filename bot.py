@@ -49,17 +49,17 @@ class Bot:
                 
                 # CASO: DESAFIO
                 if request_data['event'] == 'challenge':
-                    if request_data['data']['opponent'] == 'asdsdjbkasdfbalsd':
+                    if request_data['data']['opponent'] == 'botpractica':
                     
-                        self.aceptarChallenge()
+                        # self.aceptarChallenge()
                     
-                    await self.send(
-                        websocket,
-                        {                            
-                        'action':'accept_challenge',
-                        'data': {'challenge_id': request_data['data']['challenge_id'] }
-                        }
-                    )
+                        await self.send(
+                            websocket,
+                            {                            
+                            'action':'accept_challenge',
+                            'data': {'challenge_id': request_data['data']['challenge_id'] }
+                            }
+                        )
                     
                 # CASO: MI TURNO  
                 if request_data['event'] == 'your_turn':
@@ -90,17 +90,20 @@ class Bot:
         await websocket.send(message)
     
     
-    async def process_your_turn(self,websocket, request_data):
+    async def procesarTurno(self,websocket, request_data):
         
         game_id = request_data['data']['game_id']
-        if request_data['data']['game_id'] not in self.PARTIDAS:
+        if game_id not in self.PARTIDAS:
+            
             self.PARTIDAS[ game_id  ] = Partida(request_data['data'])
-        partida: Partida = self.PARTIDAS[ game_id ]
+        
+        partida = self.PARTIDAS[ game_id ]
         
         partida.actualizar_data(request_data['data'])
         if partida.calcularOpciones():
             movimiento , _ = partida.elegirMejorMovimiento()
-            partida.print_board()   
+            print(movimiento)
+            # partida.print_board()   
         await self.send( websocket, movimiento)
 
 
@@ -118,7 +121,7 @@ if __name__ == '__main__':
         # print(auth_token)
         
         bot = Bot(auth_token) 
-        asyncio.get_event_loop().run_until_complete(bot.conectar(auth_token))
+        asyncio.get_event_loop().run_until_complete(bot.conectar())
         
            
     else:

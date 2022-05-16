@@ -1,22 +1,29 @@
 
+import re
 from traceback import print_tb
 import numpy as np
 from datetime import datetime
 
 class Peon:
     
-    def __init__(self, x:int ,y:int , board:np.array,side) -> None:
+    def __init__(self, p_row:int ,p_col:int , board:np.array ,side:str) -> None:
         
-        self.row = x
-        self.col = y
+        # tanto Norte como Sur reciben el teblero de la misma manera. 
+        # Cuano uno jeugoa a cualquier juego ve el tablero igual 
+        # Las respuesta ser rotan en el caso de sur,
+        #   #
+        self.row = p_row
+        self.col = p_col
+        opciones_side = ['N','S']
         
-        
-        self.tablero = board
+        self.tablero = board        
         self.tablero_peones = np.zeros((9,9))
         self.row_tp = int(self.row/2)
         self.col_tp = int(self.col/2)
         # self.tablero_puntuado = np.zeros((17,17))
         self.side = side
+        opciones_side.remove(side)
+        self.opposite = opciones_side[0]
         
         # DIMENSIONES DE TABLEROS
         self.len_tablero = 17
@@ -40,13 +47,14 @@ class Peon:
         self.hay_paso_der = True
         
         self.col_izq_vacia = int()
-        self.col_der_vacia = self.len_tablero_peones - 1  
-        self.movimientosValidos()
-        self.columnasProximasVacias()
-        self.ponitBoard()
+        self.col_der_vacia = self.len_tablero_peones - 1 
+         
+        # self.movimientosValidos()
+        # self.columnasProximasVacias()
+        # self.pointBoard()
         self.mapa_movimiento = dict()
     
-    def ponitBoard(self):
+    def pointBoard(self):
             
             # p_row, p_col = peon
             
@@ -128,14 +136,18 @@ class Peon:
             
         return array_puntuado
     
-    def nextWalls(self,col, axis ='col'):
+    def nextWalls(self,col, axis ='H'):
         
-        if axis== 'col':            
-            return [int(i[0]) for i in   np.where(self.tablero[:,col] == self.h_wall)]
+        if axis== 'H':            
+            return [int(i) for i in   np.where(self.tablero[:,col] == self.h_wall)[0] ]
         else:
-            return [int(i[0]) for i in   np.where(self.tablero[col,:] == self.v_wall)]
+            # a = np.where(self.tablero[col,:] == self.v_wall)
+            # for i in  a[0]:
+            #     print(i)
+            return [int(i) for i in   np.where(self.tablero[col,:] == self.v_wall)[0] ]
         
     def hayWall(self, col, axis='col',x_orient='izquierda',y_orient='adelante'):
+        
         if axis == 'col':
             # print(self.tablero[:,col])
             if y_orient=='adelante':
@@ -145,6 +157,16 @@ class Peon:
         else :
             
             return self.v_wall in self.tablero[col,:]
+    
+    def peonesAlineados(self,col ,tipo, axis ='col'):
+        
+        if axis== 'col':            
+            a = np.where(self.tablero[:,col] == tipo)
+            b= a[0]
+            return [int(i) for i in   np.where(self.tablero[:,col] == tipo)[0] if i != self.row ]
+        else:
+            return [int(i) for i in   np.where(self.tablero[col,:] == tipo)[0] if i != self.col]
+
     
     def columnasProximasVacias(self):
         if not self.limite_izquierda : 
@@ -165,69 +187,141 @@ class Peon:
     def mapearMovimiento(self,row,col):
         zeros = np.zeros(( self.len_tablero,self.len_tablero  ))
         zeros[row,col] = 8
-        if self.side == 'S' : zeros = np.flipud( zeros)
+        if self.side == 'S' : 
+            zeros = np.flipud( zeros)
+            
         return [[int(i),int(j)] for i,j in zip(*np.where( zeros == 8 ))][0]
             
         
-    def limitesTablero(self):
-        self.limite_atras   = self.row == 0
-        self.limite_adelante = self.row == (self.len_tablero- 1)
+    def limitesTablero(self,):
+        """Arma diccionario de cuantos casilleros faltan para llegar al limite indica
+            Nos dice que tan lejos estan los limites del tablero segun la posicion del peon
+        Args:
+            i (int, optional): _description_. Defaults to 0.
+
+        Returns:
+            _type_: _description_
+        """
         
-        self.limite_izquierda =  self.col == 0
-        self.limite_derecha   =  self.col == (self.len_tablero- 1)
+        atras   = self.row_tp
+        adelante = (self.len_tablero_peones-1) - self.row_tp
         
+        izquierda =  self.col_tp
+        derecha   =  (self.len_tablero_peones-1) -self.col_tp
+        
+        return {'atras':atras,'adelante':adelante,'izquierda':izquierda,'derecha':derecha}
+        
+    def paredesCerca(self):
+        """Crea diccionario con la cantidad de posiciones a las que se encuentra una pared respecto al peon en los 4 sentido
+        a que distancia esta la pared del peon
+        """
+        # ❗❗ incluir oblicuos ttambien 
+        pared_atras = 100
+        pared_adelante = 100
+        pared_izquierda = 100
+        pared_derecha = 100
+        h_walls = self.nextWalls(self.col,'H')
+        v_walls  = self.nextWalls(self.row,'V')
+        
+        
+        for wall in h_walls:
+            dist = abs(wall - self.row)
+            if wall < self.row:  
+                if  dist < pared_atras: pared_atras = dist                  
+            else: 
+                if dist <  pared_adelante: pared_adelante =  dist
+                        
+        for wall in v_walls:
+            dist = abs(wall - self.col)
+            if wall < self.col:  
+                if  dist < pared_izquierda: pared_izquierda = dist                  
+            else: 
+                if dist <  pared_derecha: pared_derecha =  dist
+        
+        
+        return {'atras':pared_atras,'adelante':pared_adelante,'izquierda':pared_izquierda,'derecha':pared_derecha}   
+
+    
+    def peonesCerca(self,tipo):
+        
+        peon_atras     = 100
+        peon_adelante  = 100
+        peon_izquierda = 100
+        peon_derecha   = 100
+        
+        # --------- PEONES A LOS LADOS -------------------- 
+        peones_col = self.peonesAlineados(self.col, tipo ,'col') 
+        peones_row = self.peonesAlineados(self.row, tipo ,'row') 
+        
+        # peones sobre columns
+        for peon in peones_col:
+            dist = int(abs(peon - self.row)/2)
+            if peon < self.row:  
+                if  dist < peon_atras: peon_atras = dist                  
+            else: 
+                if dist <  peon_adelante: peon_adelante =  dist
+        
+        for peon in peones_row:
+            dist = int(abs(peon - self.col)/2)
+            if peon < self.col:  
+                if  dist < peon_izquierda: peon_izquierda = dist                  
+            else: 
+                if dist <  peon_derecha: peon_derecha =  dist
+        
+        
+        return {'atras':peon_atras,'adelante':peon_adelante,'izquierda':peon_izquierda,'derecha':peon_derecha}   
     
     def movimientosValidos(self):
         
         
-        # ---  LIMITES EL TABLERO ------
-            
-        self.limitesTablero()    
-        # ---- PAREDES -----------------------------------        
-                   
-        # frente o atras
-        pared_atras = self.tablero[ self.row - 1 , self.col] == self.h_wall if not self.limite_atras else self.limite_atras
-        pared_adelante = self.tablero[ self.row + 1 , self.col] == self.h_wall if not self.limite_adelante else self.limite_adelante
-                
-        # izquierda o derecha
-        pared_izquierda = self.tablero[ self.row , self.col - 1 ] == self.v_wall if not self.limite_izquierda else self.limite_izquierda 
-        pared_derecha = self.tablero[ self.row , self.col + 1 ] == self.v_wall if not self.limite_derecha else self.limite_derecha
-                
-        # ---------------------------------------------------- 
+        
+        self.borders = self.limitesTablero()                                
+        self.paredes = self.paredesCerca()                
+        self.peones_propios = self.peonesCerca(self.side)
+        self.peones_enemigos = self.peonesCerca(self.opposite)
 
-        
-        # --------- PEONES A LOS LADOS -------------------- 
-        
-        # PEONES enemigos o amigos a los COSTADOS 
-        peon_izquierda = self.tablero[ self.row , self.col - 2 ] in ['N','S'] if not self.limite_izquierda else self.limite_izquierda 
-        peon_derecha = self.tablero[ self.row , self.col + 2 ] in ['N','S'] if not self.limite_derecha else self.limite_derecha
-        
-        # PEONES enemigos o propio a los ATRAS
-        peon_atras = self.tablero[ self.row - 2 , self.col ] in ['N','S'] if not self.limite_atras else self.limite_atras
-        if not self.limite_adelante:
-            a=self.tablero[ self.row + 2 , self.col ]
-            b= self.tablero[ self.row + 2 , self.col ] == self.side 
-        peon_propio_adelante = self.tablero[ self.row + 2 , self.col ] == self.side if not self.limite_adelante else self.limite_adelante
-        
-        # ------------------------------------
-        
-        #esti en realidad es una ventaja plus que hay que ver como usar. seguro enla parte de puntuar movimiento
-        # a =self.tablero[ self.row + 2 , self.col ] == self.side 
-        peon_enemigo_adelante = self.tablero[ self.row + 2 , self.col ] == self.side if not self.limite_adelante else self.limite_adelante
-        
-        # considerar tambien si hay un peon enemigo al costado, o un peon amigo par prohibir ese movimientos
-        
-        
-        # CONTEMPLAR CASOS ESPECIALISIMOS
-        # contemplar en caso de que haya un peon delante, ya atras una rpared con la que no pueda avanzar. 
-        # o que tenga un pon y no pueda moverme de costado         
-        
-        self.atras = not self.limite_atras and not pared_atras and not peon_atras
-        self.adelante = not self.limite_adelante and not pared_adelante and not peon_propio_adelante
-        self.izquierda = not self.limite_izquierda and not pared_izquierda and not peon_izquierda # peon enemigo o prop a la izquierda se podra?  en algun caso mover igua
-        self.derecha = not self.limite_derecha and not pared_derecha and not peon_derecha
+        self.movimientos_validos = self.dicMovimientosValidos()
+    
         
         # despues agregar mas complejidad pensando posibilidad de enjaularse
+    
+    def dicMovimientosValidos(self):
+        
+        movimientos_validos = dict()                        
+                
+        for direc in ['atr','ade','izq','der']:
+            # moovimiento normal en la direccion
+            movimientos_validos[direc] = self.borders[direc] > 0  and self.paredes[direc]  > 1 and self.peones_propios[direc]     > 1  and self.peones_enemigos[direc] > 1     
+            # salto normal en la direccion
+            if not movimientos_validos[direc] and  self.borders[direc] > 1 and self.paredes[direc]  > 3  and self.peones_propios[direc] > 2 and self.peones_enemigos[direc] == 1:
+                movimientos_validos[f'{direc}-salto'] = self.saltoFrontalPermitido(direc)
+                
+            # salto oblicuo
+            if not movimientos_validos[direc] and self.borders[direc] > 1 and self.paredes[direc]  == 3  and self.peones_propios[direc] > 2 and self.peones_enemigos[direc] == 1:
+                movimientos_validos[f'{direc}-obl-1'],movimientos_validos[f'{direc}-obl-2'] =  self.saltosOblicuosPermitidos(direc)                 
+                    
+        return movimientos_validos
+       
+    def saltoFrontalPermitido(self,direccion):
+        if   direccion == 'atr': row ,col = self.row -4, self.col
+        elif direccion == 'ade': row ,col = self.row +4, self.col
+        elif direccion == 'izq': row ,col = self.row   , self.col -4
+        elif direccion == 'der': row ,col = self.row   , self.col +4
+        
+        return self.tablero[row,col] == ' '
+   
+    def saltosOblicuosPermitidos(self,direccion):
+        
+        if   direccion == 'atr': 
+            row_1, row_2 , col_1, col_2   = self.row - 2, self.row - 2,  self.col -2, self.col +2
+        elif direccion == 'ade': 
+            row_1, row_2 , col_1, col_2   = self.row + 2, self.row + 2,  self.col -2, self.col +2
+        elif direccion == 'izq': 
+            row_1, row_2 , col_1, col_2   = self.row - 2, self.row + 2,  self.col -2, self.col -2
+        elif direccion == 'der': 
+            row_1, row_2 , col_1, col_2   = self.row - 2, self.row + 2,  self.col +2, self.col +2
+        
+        return self.tablero[row_1,col_1] == ' ', self.tablero[row_2,col_2] == ' '
 
     def puntaje_movimiento(self, movimiento:str) -> int:
         
@@ -266,9 +360,7 @@ class Peon:
         distancia = 3*(len(camino_v) +len(camino_h))
         return  2.5*gx+int((camino_h.sum() + camino_v.sum())/(distancia))
     
-    
-    
-    
+
     def armarDicMovimientos(self):
         
         self.dic_movimientos = dict() 
@@ -283,8 +375,7 @@ class Peon:
     def mejorMovimiento(self) -> str:
         
         return list(self.armarDicMovimientos().items())[0]
-        
-        
+                
     def ubicacionPeon(self):
         return self.mapearMovimiento(self.row,self.col)
 
@@ -296,6 +387,7 @@ class Peon:
     
     
         pass
+    
     def print_movimientos(self):
         print()
         print('atras: ',self.atras)
@@ -315,7 +407,7 @@ def test_puntaje_tablero(table):
     print(table)
     
     p = Peon(p_row,p_col, table)
-    p.ponitBoard()
+    p.pointBoard()
     print(p.tablero_peones)
 
 
@@ -347,9 +439,9 @@ if __name__ == '__main__':
     table = np.array([
         
         # 0    1    2    3    4    5    6    7    8    9   10   11   12  13   14   15   16    
-        ['N', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 0
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 0
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 1
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 2
+        [' ', ' ', 'N', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 2
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 3
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '|', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 4
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '*', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 5
