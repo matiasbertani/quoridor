@@ -4,23 +4,32 @@ import websockets
 import asyncio
 import json
 import numpy as np
-
+import sys
 from partida import Partida
-
+import time
 
 class Bot:
-    def __init__(self) -> None:
-        self.nombre = 'Lord Boteus'
+    
+    def __init__(self, auth_token) -> None:
+        self.nombre = 'Lord Botius'
         self.PARTIDAS = dict()  # diccionario almecena por id las paridaas actales que se juegan
-        self
+        self.auth_token = auth_token
     
     
-    def iniciar():
-        pass
-    
-    def conectar():
-        pass
-    
+    async def conectar(self):
+        uri = "wss://4yyity02md.execute-api.us-east-1.amazonaws.com/ws?token={}".format(self.auth_token)
+        while True:
+            try:
+                print('connection to {}'.format(uri))
+                async with websockets.connect(uri) as websocket:
+                    await self.gestionarEvento(websocket)
+            except KeyboardInterrupt:
+                print('Exiting...')
+                break
+            except Exception:
+                print('connection error!')
+                time.sleep(3)
+        
     async def gestionarEvento(self, websocket):
         
         while True:
@@ -35,20 +44,21 @@ class Bot:
                 
                 # CASO: GAMEOVER
                 if request_data['event'] == 'gameover':
+                    self.process_game_over(request_data)
                     pass
                 
                 # CASO: DESAFIO
                 if request_data['event'] == 'challenge':
-                    # if request_data['data']['opponent'] == 'favoriteopponent':
+                    if request_data['data']['opponent'] == 'asdsdjbkasdfbalsd':
                     
-                    self.aceptarChallenge()
+                        self.aceptarChallenge()
                     
-                    await self.sendAction(
+                    await self.send(
                         websocket,
-                        'accept_challenge',
-                        {
-                            'challenge_id': request_data['data']['challenge_id'],
-                        },
+                        {                            
+                        'action':'accept_challenge',
+                        'data': {'challenge_id': request_data['data']['challenge_id'] }
+                        }
                     )
                     
                 # CASO: MI TURNO  
@@ -67,7 +77,7 @@ class Bot:
                 break  # force login again
             
   
-    async def send(websocket, respuesta:dict):
+    async def send(self, websocket, respuesta:dict):
         """Send an action to the server by the websocket
 
         Args:
@@ -94,35 +104,24 @@ class Bot:
         await self.send( websocket, movimiento)
 
 
-    
-    
-    def desafiar(self):
-        pass
-    
-    def aceptarChallenge(self):
-        pass
-    
-    def rechazarPartida(self):
-        pass
-     
-    
-    def agregarPartida(self, data):
-        print('Nueva partida ')
-        pass
-        
-    
-    def decidirMovimiento(self):
-        pass
-    
-    
-    def procesarTurno(self):
-        pass
-    
+    def process_game_over(self,request_data):
+        print(request_data)
     
 
-    
     
     
 if __name__ == '__main__':
-
-    test_partida_1()
+    if len(sys.argv) >= 2:
+        
+        auth_token = sys.argv[1]
+        
+        # print(auth_token)
+        
+        bot = Bot(auth_token) 
+        asyncio.get_event_loop().run_until_complete(bot.conectar(auth_token))
+        
+           
+    else:
+        print('please provide your auth_token')
+    
+    

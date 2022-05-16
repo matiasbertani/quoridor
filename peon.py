@@ -28,7 +28,7 @@ class Peon:
         self.atras = bool()        
         self.izquierda = bool()
         self.derecha = bool()
-        pass
+        
         self.col_points = np.array([ 2**i for i in range(9) ])
         
         self.h_wall = '-'
@@ -161,7 +161,12 @@ class Peon:
                     break 
             else: self.hay_paso_der = False
             
-                    
+    
+    def mapearMovimiento(self,row,col):
+        zeros = np.zeros(( self.len_tablero,self.len_tablero  ))
+        zeros[row,col] = 8
+        if self.side == 'S' : zeros = np.flipud( zeros)
+        return [[int(i),int(j)] for i,j in zip(*np.where( zeros == 8 ))][0]
             
         
     def limitesTablero(self):
@@ -231,31 +236,38 @@ class Peon:
             gx = self.tablero_peones[self.row_tp - 1,self.col_tp]
             camino_h = np.array([])
             camino_v = self.tablero_peones[self.row_tp - 1:self.row_tp ,self.col_tp]
-            self.mapa_movimiento[ movimiento ] = [self.row-2, self.col]
+            # self.mapa_movimiento[ movimiento ] = [self.row-2, self.col]
+            self.mapa_movimiento[ movimiento ] = self.mapearMovimiento(self.row-2, self.col)
             
         elif movimiento =='adelante':    
             gx = self.tablero_peones[self.row_tp + 1,self.col_tp]        
             camino_h = np.array([])
             camino_v = self.tablero_peones[self.row_tp:self.len_tablero_peones,self.col_tp]
-            self.mapa_movimiento[ movimiento ] = [self.row+2, self.col]
+            # self.mapa_movimiento[ movimiento ] = [self.row+2, self.col]
+            self.mapa_movimiento[ movimiento ] = self.mapearMovimiento(self.row+2, self.col)
             
         elif movimiento =='izquierda':
             gx = self.tablero_peones[self.row_tp,self.col_tp - 1]
             camino_h = self.tablero_peones[self.row_tp, self.col_izq_vacia :self.col_tp + 1 ]
             camino_v = self.tablero_peones[self.row_tp:self.len_tablero_peones,self.col_izq_vacia]
-            self.mapa_movimiento[ movimiento ] = [self.row, self.col-2]
+            # self.mapa_movimiento[ movimiento ] = [self.row, self.col-2]
+            self.mapa_movimiento[ movimiento ] = self.mapearMovimiento(self.row, self.col-2)
             
         elif movimiento =='derecha':
             gx = self.tablero_peones[self.row_tp,self.col_tp + 1]
             camino_h = self.tablero_peones[self.row_tp, self.col_tp :self.col_der_vacia + 1 ]
             camino_v = self.tablero_peones[self.row_tp:self.len_tablero_peones,self.col_der_vacia]
-            self.mapa_movimiento[ movimiento ] = [self.row, self.col+2]
+            # self.mapa_movimiento[ movimiento ] = [self.row, self.col+2]
+            self.mapa_movimiento[ movimiento ] = self.mapearMovimiento(self.row, self.col+2)
         
         # print(movimiento)    
         # print(self.tablero_peones)
         # print(self.tablero_peones[p_row_desde:p_row_hasta,p_col_desde:p_col_hasta])
         distancia = 3*(len(camino_v) +len(camino_h))
         return  2.5*gx+int((camino_h.sum() + camino_v.sum())/(distancia))
+    
+    
+    
     
     def armarDicMovimientos(self):
         
@@ -273,7 +285,8 @@ class Peon:
         return list(self.armarDicMovimientos().items())[0]
         
         
-
+    def ubicacionPeon(self):
+        return self.mapearMovimiento(self.row,self.col)
 
     def detrasWall(self):
         
@@ -306,17 +319,17 @@ def test_puntaje_tablero(table):
     print(p.tablero_peones)
 
 
-def test_movimientos_validos(table):
+def test_movimientos_validos(table,side='N'):
     t1 = datetime.now()
-    p_row = 10
-    p_col = 12   
+    p_row = 12
+    p_col = 16   
     
     
   
-    table[p_row, p_col] = 'N'
+    table[p_row, p_col] = side
     print(np.array(list(range(17))).astype('str'))
     print(table)
-    p = Peon(p_row,p_col, table,'N')
+    p = Peon(p_row,p_col, table,side)
     
     p.print_movimientos()
     
@@ -338,7 +351,7 @@ if __name__ == '__main__':
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 1
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 2
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 3
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '|', '-', '*', '-',' ', ' ', ' ', ' '], # 4
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '|', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 4
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '*', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 5
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'N', '|', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 6
         [' ', ' ', ' ', ' ', ' ', ' ', '-', '*', '-', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 7
@@ -350,11 +363,11 @@ if __name__ == '__main__':
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 13
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', '|', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 14
         ['-', '*', '-', ' ', '-', '*', '-', '*', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 15
-        ['N', ' ', ' ', ' ', ' ', ' ', ' ', '|', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' ']] # 16
+        ['N', ' ', ' ', ' ', ' ', ' ', ' ', '|', ' ', ' ', ' ', ' ', 'S',' ', ' ', ' ', ' ']] # 16
 
             
             )
     
     #disrae mucho al boto las paredes solapadas en escalon
-    test_movimientos_validos(table)
+    test_movimientos_validos(table,'S')
     # test_puntaje_tablero(table)
