@@ -161,8 +161,6 @@ class Peon:
     def peonesAlineados(self,col ,tipo, axis ='col'):
         
         if axis== 'col':            
-            a = np.where(self.tablero[:,col] == tipo)
-            b= a[0]
             return [int(i) for i in   np.where(self.tablero[:,col] == tipo)[0] if i != self.row ]
         else:
             return [int(i) for i in   np.where(self.tablero[col,:] == tipo)[0] if i != self.col]
@@ -193,7 +191,7 @@ class Peon:
         return [[int(i),int(j)] for i,j in zip(*np.where( zeros == 8 ))][0]
             
         
-    def limitesTablero(self,):
+    def limitesTablero(self,)-> dict:
         """Arma diccionario de cuantos casilleros faltan para llegar al limite indica
             Nos dice que tan lejos estan los limites del tablero segun la posicion del peon
         Args:
@@ -211,7 +209,7 @@ class Peon:
         
         return {'atras':atras,'adelante':adelante,'izquierda':izquierda,'derecha':derecha}
         
-    def paredesCerca(self):
+    def paredesCerca(self) -> dict :
         """Crea diccionario con la cantidad de posiciones a las que se encuentra una pared respecto al peon en los 4 sentido
         a que distancia esta la pared del peon
         """
@@ -240,9 +238,8 @@ class Peon:
         
         
         return {'atras':pared_atras,'adelante':pared_adelante,'izquierda':pared_izquierda,'derecha':pared_derecha}   
-
     
-    def peonesCerca(self,tipo):
+    def peonesCerca(self,tipo) -> dict:
         
         peon_atras     = 100
         peon_adelante  = 100
@@ -271,7 +268,7 @@ class Peon:
         
         return {'atras':peon_atras,'adelante':peon_adelante,'izquierda':peon_izquierda,'derecha':peon_derecha}   
     
-    def movimientosValidos(self):
+    def movimientosValidos(self) -> dict :
         
         
         
@@ -282,6 +279,7 @@ class Peon:
 
         self.movimientos_validos = self.dicMovimientosValidos()
     
+        return self.movimientos_validos
         
         # despues agregar mas complejidad pensando posibilidad de enjaularse
     
@@ -289,7 +287,7 @@ class Peon:
         
         movimientos_validos = dict()                        
                 
-        for direc in ['atr','ade','izq','der']:
+        for direc in ['atras','adelante','izquierda','derecha']:
             # moovimiento normal en la direccion
             movimientos_validos[direc] = self.borders[direc] > 0  and self.paredes[direc]  > 1 and self.peones_propios[direc]     > 1  and self.peones_enemigos[direc] > 1     
             # salto normal en la direccion
@@ -303,25 +301,32 @@ class Peon:
         return movimientos_validos
        
     def saltoFrontalPermitido(self,direccion):
-        if   direccion == 'atr': row ,col = self.row -4, self.col
-        elif direccion == 'ade': row ,col = self.row +4, self.col
-        elif direccion == 'izq': row ,col = self.row   , self.col -4
-        elif direccion == 'der': row ,col = self.row   , self.col +4
+        if   direccion == 'atras': row ,col = self.row -4, self.col
+        elif direccion == 'adelante': row ,col = self.row +4, self.col
+        elif direccion == 'izquierda': row ,col = self.row   , self.col -4
+        elif direccion == 'derecha': row ,col = self.row   , self.col +4
         
         return self.tablero[row,col] == ' '
    
     def saltosOblicuosPermitidos(self,direccion):
         
-        if   direccion == 'atr': 
+        if   direccion == 'atras': 
             row_1, row_2 , col_1, col_2   = self.row - 2, self.row - 2,  self.col -2, self.col +2
-        elif direccion == 'ade': 
+            row_wall_1, row_wall_2, col_wall_1,col_wall_2 = self.row - 2, self.row - 2,  self.col -1, self.col +1
+            
+        elif direccion == 'adelante': 
             row_1, row_2 , col_1, col_2   = self.row + 2, self.row + 2,  self.col -2, self.col +2
-        elif direccion == 'izq': 
+            row_wall_1, row_wall_2, col_wall_1,col_wall_2 = self.row +2, self.row +2,  self.col -1, self.col +1
+        elif direccion == 'izquierda': 
             row_1, row_2 , col_1, col_2   = self.row - 2, self.row + 2,  self.col -2, self.col -2
-        elif direccion == 'der': 
+            row_wall_1, row_wall_2, col_wall_1,col_wall_2 = self.row -1, self.row +1,  self.col -2, self.col -2
+        elif direccion == 'derecha': 
             row_1, row_2 , col_1, col_2   = self.row - 2, self.row + 2,  self.col +2, self.col +2
+            row_wall_1, row_wall_2, col_wall_1,col_wall_2 = self.row -1, self.row +1,  self.col +2, self.col +2
         
-        return self.tablero[row_1,col_1] == ' ', self.tablero[row_2,col_2] == ' '
+        mov_1 = self.tablero[row_1,col_1] == ' ' and self.tablero[row_wall_1,col_wall_1] == ' ' 
+        mov_2 = self.tablero[row_2,col_2] == ' ' and self.tablero[row_wall_2,col_wall_2] == ' ' 
+        return  mov_1, mov_2
 
     def puntaje_movimiento(self, movimiento:str) -> int:
         
