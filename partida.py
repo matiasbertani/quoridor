@@ -93,6 +93,7 @@ class Partida:
  
  
     def detectarPeones(self):
+        print('peones')
         for i,j in zip(*np.where( self.np_board == self.side )):print(i,j)
         l =[ Peon(int(i),int(j),self.np_board,self.side) for i,j in zip(*np.where( self.np_board == self.side )) ]
         return l
@@ -145,12 +146,13 @@ class Partida:
         peon = self.peones[peon_index]
         to_row, to_col = peon.mapa_movimiento[movimiento]
         from_row, from_col = peon.ubicacionPeon()
+        print('movimientos')
+        print(to_row, to_col)
         
         
         
-        to_row_2, to_col_2 = int(to_row/2), int(to_col/2)
         from_row_2, from_col_2 = int(from_row/2), int(from_col/2)
-        
+        to_row_2, to_col_2 = int(to_row/2), int(to_col/2)
         
         
         if self.side =='S' :self.np_board = np.flipud(self.np_board)
@@ -193,7 +195,7 @@ def armar_tablero_str() ->str:
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 13
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 14
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 15
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' ']] # 16
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'S', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' ']] # 16
             
             )        
                 
@@ -238,7 +240,7 @@ def test_avance_inteligente_peon(side='N'):
         data['data']['board'] = board
         
 
-def multiples_peones_inteligentes(side='N'):
+def multiples_peones_inteligentes(side='S'):
     tablero_str = armar_tablero_str()    
     data = getData(side,tablero_str)
     
@@ -324,5 +326,5 @@ class Wall(Action):
 
 if __name__ == '__main__':
     # test_avance_inteligente_peon()
-    multiples_peones_inteligentes('N')
+    multiples_peones_inteligentes('S')
     pass
