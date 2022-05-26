@@ -1,16 +1,24 @@
 from datetime import datetime
-from random import choice, shuffle
+from random import choice, shuffle, randint
+from actions import *
 from peon import Peon
+from wall import Wall
 import numpy as np
 import time
 
 class Partida:
+    
     def __init__(self, data_game) -> None:
         
         self.id_game = data_game['game_id']
         
         self.str_board = data_game['board']
         self.side = data_game['side']
+        
+        opciones_side = ['N','S']
+        opciones_side.remove(self.side)
+        self.opposite = opciones_side[0]
+        
         self.np_board = self.to_numpy(self.str_board)
         
         self.historial_movimientos = None
@@ -22,6 +30,7 @@ class Partida:
         self.col_points = np.array([ 2**i for i in range(9) ])
     
         self.len_board = 9
+        self.board_length = 17
         
         self.h_wall = '-'
         self.v_wall = '|'
@@ -42,6 +51,11 @@ class Partida:
         self.np_board = self.to_numpy(self.str_board)
         self.walls_restantes = int(data['walls'])
         self.movimientos_restantes = int(data['remaining_moves'])
+        self.side = data['side']
+        
+        opciones_side = ['N','S']
+        opciones_side.remove(self.side)
+        self.opposite = opciones_side[0]
         self.print_board()
         
         
@@ -71,103 +85,239 @@ class Partida:
         return ''.join(list(np_board.reshape(289)))
           
     
-    def decidirMovimiento(self,data):
-        'Decide el siguiente movimiento y retorna el dict de respuesta apra enviar al servidor'
-        
-        
-        #SOLO MOVER PARA ADELANTE LOS PEONES
-        peones = [ [i,j] for i,j in zip(*np.where( self.np_board == self.side ))]
-        n =len(peones.copy())
-        to_row,to_col = None, None
-        for _ in range(n):
-            shuffle(peones)
-            peon =  peones.pop()
-            
-            if ( peon[0] != 8*2 and self.side=='N') or (peon[0] != 0 and self.side=='S'):
-                to_row,to_col = self.mover_adelante(peon)
-                break
-        self.np_board[to_row][to_col] = self.side
-        self.np_board[peon[0]][peon[1]] = ' '
-        self.str_board = self.to_str(self.np_board)
-        return Move(data,peon[0],peon[1],to_row,to_col).to_dict() if (to_row is not None and to_col is not None )else False , self.str_board
+    def getRealPosition(self, row,col,side):
+        zeros = np.zeros(( self.board_length, self.board_length  ))
+        zeros[row,col] = 8
+        if side == 'S' : 
+            zeros = np.flipud( zeros)
+        return [[int(i),int(j)] for i,j in zip(*np.where( zeros == 8 ))][0]
  
+    def flipBoard(self, board:np.array) -> np.array:
+        return np.flipud(board)
+        
  
-    def detectarPeones(self):
-        print('peones')
-        for i,j in zip(*np.where( self.np_board == self.side )):print(i,j)
-        l =[ Peon(int(i),int(j),self.np_board,self.side) for i,j in zip(*np.where( self.np_board == self.side )) ]
-        return l
+    def getPawns(self):        
+        return [ Peon(int(i),int(j),self.np_board,self.side ) for i,j in zip(*np.where( self.np_board == self.side )) ]
        
+    def getEnemysPawns(self):
+        
+        return [ [int(i),int(j)] for i,j in zip(*np.where( self.np_board == self.opposite )) ]
+    
+    def getEnemysPawns_2(self):
+        
+        
+        return [ Peon(int(i),int(j),self.flipBoard(self.np_board),self.opposite ) for i,j in zip(*np.where( self.np_board == self.opposite )) ]
  
-    def testmoverPeon(self,data):
-        
-        time.sleep(0.1)
-        peones = self.detectarPeones()
-        peon = peones[0] 
-        to_row, to_col =  None, None
-        
-        if (peon.row != 16 and peon.side == 'N') or (peon.row != 0 and peon.side == 'S'):
-            
-            mov = list(peon.armarDicMovimientos().keys())[0]
-            # print(peon.dic_movimientos)
-            to_row, to_col = peon.mapa_movimiento[mov]
-            
-            self.np_board[ to_row , to_col ] = self.side
-            
-            self.np_board[ peon.row, peon.col ] = ' '
-            
-            self.str_board = self.to_str(self.np_board)
-        
-        return Move(data,peon.row, peon.col, to_row, to_col).to_dict() if (to_row is not None and to_col is not None )else False , self.str_board
+     
     
     def calcularOpciones(self):
         # self.data_actual = data
-        # DETECTAR TODOS LOS PEONES
-        self.peones = self.detectarPeones()
+        # DETECTAR TODOS LOS PEONES MIOS
+        self.peones = self.getPawns()
         # PARA CADA PEON
         self.mejores_opciones = {}
         for i,peon in enumerate(self.peones):
-            
-            p_row,p_col = peon.ubicacionPeon()
-            if (p_row != 16 and peon.side == 'N') or (p_row != 0 and peon.side == 'S'):
+                    
+            if peon.hay_movimientos_validos:
                 mov,puntos = peon.mejorMovimiento()   
-                self.mejores_opciones = {i:[mov,puntos]}         
+                self.mejores_opciones[i] = [mov,puntos]
            
         return len(self.mejores_opciones)
 
+    def calculateMoves(self, pawns) -> dict:
+        move_options = {}
+        
+        for i,peon in enumerate(pawns):
+        
+        # p_row,p_col = peon.ubicacionPeon()
+        # if (p_row != 16 and peon.side == 'N') or (p_row != 0 and peon.side == 'S'):
+        
+            if peon.hay_movimientos_validos:
+                mov,puntos = peon.mejorMovimiento()   
+                move_options[i] = [mov,puntos]
+        # sort from low to high
+        move_options = sorted(move_options.items(),  key= lambda x: x[1][1] )
+        return move_options
+
     
     def elegirMejorMovimiento(self):
-                
-        peon_index,[best_move,puntaje] = sorted(self.mejores_opciones.items(),  key= lambda x: x[1][1] )[-1]
-        return self.moverPeon(peon_index, best_move )
+        
+        # if self.walls_restantes>0:
+        #     move_wall , w_row, w_col = self.putHorizontalWall()
+        #     if move_wall :
+        #         w_row, w_col = Wall.getWallCordinates(w_row, w_col,self.side)                
+        #         return WallAction(self.data_actual,w_row, w_col,'h').to_dict()
+        if randint(0,5)>0:
+            move_wall, action = self.wallManagement()
+            if move_wall: return action
+            
+        if randint(0, 6) > 0 : id_peon = -1
+        
+        else:
+            if len(self.mejores_opciones ) > 1:
+                id_peon = -2
+            else:id_peon = -1
+        
+        peon_index,[best_move,puntaje] = sorted(self.mejores_opciones.items(),  key= lambda x: x[1][1] )[id_peon]
+        
+        # en caso de que haya un paredes disponibles y peones cerca de la meta
+        
+        
+        return self.movePawn(peon_index, best_move )
         
     
-    def moverPeon(self,peon_index,movimiento):
+    def putHorizontalWall(self):
+        pawns = self.getEnemysPawns()
+        pawns = sorted( pawns , key = lambda x: x[0])
+        # pawns.reverse()
+        self.empty_wall_places = Wall.getEmptyWallPlaces(self.np_board.copy())
+        poner_wall = False
+        w_row, w_col = None, None
+        
+        
+        for p_row, p_col  in pawns: 
+            
+            if p_row < 10:
+                if not Wall.WallInFront(self.np_board.copy(), p_row, p_col):
+                    
+                    possible_walls = Wall.wallIndexSide( p_row, p_col, 'front')
+                    
+                    for w_row, w_col in possible_walls :
+                        if [w_row, w_col] in self.empty_wall_places:
+                            if Wall(w_row, w_col, 'h', self.np_board.copy(),self.side).movimientoPermitido():
+                                poner_wall = True
+                                break                            
+                    else:
+                        continue
+                    break
+                            
+        return   poner_wall, w_row, w_col
+      
+      
+      
+                        
+    def calculateEnemyOptions(self):
+        
+        # get enemies pawns
+        self.enemy_pawns = self.getEnemysPawns_2(self.opposite)
+        # calculate best move for every pawn
+        enemy_moves = self.calculateMoves(self.enemy_pawns)
+        pawn_index, [best_move,puntaje]  = enemy_moves[-1]
+        
+                
+        
+        
+        pass
+    
+    def pawnsCloseToGoal(self) -> list:
+        # True or False if the enemy awns is one step to the goal
+        self.enemy_pawns = self.getEnemysPawns_2(self.opposite)
+        
+        close_to_goal = [ pawn for pawn in self.enemy_pawns if pawn.row == 14]
+        return close_to_goal
+     
+     
+    def wallManagement(self):
+        
+        move_wall = False
+        action = None
+        self.enemy_pawns = self.getEnemysPawns()
+        
+        self.empty_wall_places = Wall.getEmptyWallPlaces(self.np_board.copy())
+        
+        if self.walls_restantes:
+            
+            move_wall , w_row, w_col = self.putHorizontalWall()
+            if move_wall: 
+                w_row, w_col = Wall.getWallCordinates(w_row, w_col,self.side)                
+                return move_wall, WallAction(self.data_actual,w_row, w_col,'h').to_dict()
+            
+            move_wall , w_row, w_col = self.putVerticalWall() 
+            if move_wall: 
+                w_row, w_col = Wall.getWallCordinates(w_row, w_col,self.side)                
+                return move_wall, WallAction(self.data_actual,w_row, w_col,'v').to_dict()
+        return   move_wall, action
+    
+    
+    def movePawn(self,peon_index,movimiento):
+        
         peon = self.peones[peon_index]
+        
         to_row, to_col = peon.mapa_movimiento[movimiento]
         from_row, from_col = peon.ubicacionPeon()
-        print('movimientos')
-        print(to_row, to_col)
-        
-        
+      
         
         from_row_2, from_col_2 = int(from_row/2), int(from_col/2)
         to_row_2, to_col_2 = int(to_row/2), int(to_col/2)
-        
-        
-        if self.side =='S' :self.np_board = np.flipud(self.np_board)
-        self.np_board[ to_row , to_col ] = self.side
-        
-        self.np_board[ from_row, from_col ] = ' '
-        
-        if self.side =='S' :self.np_board = np.flipud(self.np_board)
-        
-        self.str_board = self.to_str(self.np_board)
-        
-        return Move(self.data_actual,from_row_2, from_col_2, to_row_2, to_col_2).to_dict() , self.str_board #if (to_row is not None and to_col is not None )else False 
-        
-        
+                     
+        return Move(self.data_actual,from_row_2, from_col_2, to_row_2, to_col_2).to_dict() 
  
+    
+    def findEnemyPawn(self, pawn_psotion):
+        #give the position of the pawn that was in rg psition given and return the new position
+        
+        #this is usefull when you want to put in cage a enemy pawn and moves
+        
+        pass
+    
+    def inTheWallLimit(self):
+        
+        #True or False if the enemy pawn is in the Horiontal Limit
+        pass
+     
+    def chooseAction(self):
+        
+        # calcular movimientos MIS PEONES
+        
+        # calcular movimiento PEONES ENEMIGOS
+        
+        # si hay peon enemigo a punto de llegar a lameta.
+            # SI ES POSIBLE ENJAULAR:
+                # retornar enjaular
+        
+        
+        # COMPARAR MI MEJOR MOVIMIENTO CON ENEMIGO:
+            # si el es mayo o igual :
+                # si es posible poner wall: # frenar e intetar enjaular
+            #caso contrario mover mi mejor peon.
+
+        
+        
+        
+        
+        pass 
+    
+    
+    def putVerticalWall(self):
+        
+        
+        
+        put_wall, wall_row, wall_col =False, None, None
+        
+        
+        
+        # verificar pared de delante
+        for p_row, p_col  in self.enemy_pawns: 
+            if Wall.WallInFront(self.np_board, p_row, p_col):
+            
+                way = Wall.freeWaySide(self.np_board, p_row, p_col )
+                if way:
+                    
+                    #obtienne walls            
+                    walls = Wall.wallIndexSide( p_row, p_col,way )
+                    # verifica 
+                    for wall_row, wall_col in walls:
+                        
+                        if [wall_row, wall_col] in self.empty_wall_places:
+                        
+                            if Wall(wall_row, wall_col, 'v', self.np_board.copy(),self.side).movimientoPermitido():
+                                put_wall = True 
+                                break 
+                    else: continue        
+                    break                    
+        
+        return put_wall, wall_row, wall_col
+    
 def armar_tablero_str() ->str:
     # tablero_str = ' '*289
     # tablero_np = np.array(  list(tablero_str) ).reshape(17,17)
@@ -179,23 +329,23 @@ def armar_tablero_str() ->str:
                 
     table = np.array([
         # 0    1    2    3    4    5    6    7    8    9   10   11   12  13   14   15   16    
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 0
+        [' ', ' ', 'N', ' ', ' ', ' ', ' ', ' ', 'N', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 0
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 1
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 2
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 3
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 4
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 5
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 6
+        [' ', ' ', ' ', ' ', ' ', ' ', 'S', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 6
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 7
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 8
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 9
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', 'N', ' ', ' '], # 8
+        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', '-', '*', '-'], # 9
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 10
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 11
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 12
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 13
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 14
         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 15
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'S', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' ']] # 16
+        [' ', ' ', 'S', ' ', 'S', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' ']] # 16
             
             )        
                 
@@ -263,62 +413,6 @@ def multiples_peones_inteligentes(side='S'):
         print('tiempo:',datetime.now() -t1 )
   
     
-class Action:
-            
-    def __init__(self, data) -> None:
-        
-        self.action = None
-        self.game_id = data['game_id']
-        self.turn_token = data['turn_token']
-        
-    def to_dict(self):
-        return {
-            'action': self.action,
-            'data': {
-                'game_id': self.game_id,
-                'turn_token': self.turn_token,
-            },
-        }
- 
-    
-class Move(Action):
-    
-    def __init__(self, data, from_row, from_col,to_row, to_col) -> None:
-        super().__init__(data)
-        self.action = 'move'
-        self.from_row = from_row
-        self.to_row = to_row
-        self.from_col = from_col
-        self.to_col = to_col
-        
-    def to_dict(self):
-        
-        ret = super().to_dict()
-        ret['data'].update({
-            'from_row': self.from_row,
-            'to_row': self.to_row,
-            'from_col': self.from_col,
-            'to_col': self.to_col,
-        })
-        return ret
-    
-    
-class Wall(Action):
-    def __init__(self, data, row, col, orientation) -> None:
-        super().__init__(data)
-        self.action = 'wall'
-        self.row = row
-        self.col = col
-        self.orientation = orientation
-
-    def to_dict(self):
-        ret = super().to_dict()
-        ret['data'].update({
-            'row': self.row,
-            'col': self.col,
-            'orientation': self.orientation,
-        })
-        return ret
 
 
 
@@ -326,5 +420,5 @@ class Wall(Action):
 
 if __name__ == '__main__':
     # test_avance_inteligente_peon()
-    multiples_peones_inteligentes('S')
+    multiples_peones_inteligentes('N')
     pass

@@ -49,7 +49,7 @@ class Bot:
                 
                 # CASO: DESAFIO
                 if request_data['event'] == 'challenge':
-                    if request_data['data']['opponent'] == 'botpractica':
+                    if request_data['data']['opponent']: #== 'botpractica'
                     
                         # self.aceptarChallenge()
                     
@@ -101,7 +101,7 @@ class Bot:
         
         partida.actualizar_data(request_data['data'])
         if partida.calcularOpciones():
-            movimiento , _ = partida.elegirMejorMovimiento()
+            movimiento  = partida.elegirMejorMovimiento()
             print(movimiento)
             # partida.print_board()   
         await self.send( websocket, movimiento)
@@ -109,6 +109,10 @@ class Bot:
 
     def process_game_over(self,request_data):
         print(request_data)
+        game_id = request_data['data']['game_id']
+        print('intenta eliminar')
+        del self.PARTIDAS[ game_id  ]
+        print('PARTIDA ELIMINADA')
     
 
     
