@@ -68,7 +68,7 @@ class Peon:
             
             if wall_row > self.row:
                 n_casilleros = int((self.len_tablero - wall_row)/2)    
-                puntos_detras= np.arange(-20*n_casilleros,0,20)
+                puntos_detras= np.arange(-30*n_casilleros,0,30)
                 self.tablero_peones[ int( (wall_row+1) /2 ):self.len_tablero_peones, int(col/2)] = puntos_detras
     
     def puntuarDetrasWallVertical(self) -> None:

@@ -100,9 +100,9 @@ class Bot:
         partida = self.PARTIDAS[ game_id ]
         
         partida.actualizar_data(request_data['data'])
-        if partida.calcularOpciones():
-            movimiento  = partida.elegirMejorMovimiento()
-            print(movimiento)
+        
+        movimiento  = partida.elegirMejorMovimiento()
+        print(movimiento)
             # partida.print_board()   
         await self.send( websocket, movimiento)
 

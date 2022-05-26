@@ -5,10 +5,7 @@ class Scanner:
     
     
     def __init__(self, p_row:int ,p_col:int , board:np.array ,side:str) -> None:
-        # tanto Norte como Sur reciben el teblero de la misma manera. 
-        # Cuano uno jeugoa a cualquier juego ve el tablero igual 
-        # Las respuesta ser rotan en el caso de sur,
-        #   #
+        '''Class to scan if exist a way out in the boar for the selected position'''
         self.row = p_row
         self.col = p_col
         self.start_row = int()
@@ -71,7 +68,6 @@ class Scanner:
         self.hay_movimientos_validos =  any(self.movimientos_validos.values())
         self.valid_moves = [ move for move, valid in self.movimientos_validos.items()  if valid ]
         return self.movimientos_validos          
-    
     
     
     def limitesTablero(self)-> dict:
@@ -207,17 +203,13 @@ class Scanner:
                 if wall <  limit_2: limit_2 =  wall  -1
             
         return limit_1, limit_2    
-    
-    
+       
     def eraseOtherPawns(self):
         pawns = self.getPawnsPositions()
         for p_row, p_col in pawns:
             if not (self.row == p_row  and self.col == p_col):
                 self.board[p_row, p_col] = ' ' 
-        
-
-     
-         
+                 
     def getPawnsPositions(self) -> list:
         
                 
@@ -237,13 +229,11 @@ class Scanner:
             # if prohibidos[self.border_position] in moves:  moves.remove(prohibidos[self.border_position])
             self.historico[ (self.row,self.col) ] = moves # , self.border_position
 
-        
     def remove_movement(self, move):
         if self.existInHistoric():
             if move in self.historico[ (self.row,self.col) ]: # , self.border_position
                 self.historico[ (self.row,self.col) ].remove(move) #, self.border_position
-            
-    
+                
     def existInHistoric(self) -> bool:
         return  (self.row,self.col) in self.historico # , self.border_position
         
@@ -377,40 +367,34 @@ class Scanner:
         
         valid_moves = True
         self.eraseOtherPawns()
-        # llevar al limite izquierdo proximo
+    
         left_limit ,_ =  self.getLimits(self.row, self.col, 'V')
-        # print(self.board)
+    
         self.move(self.row, left_limit)        
-        self.border_position ='izquierda'
-        
-        # setear lo movmientos paa recorrer en reloj o contrareloj
-        
-        movimientos = self.armarDictDirecciones()
-        # REPETIR  apra cada posicion en la que se encuentre el peon fictisio hasta que se cmpla condicion de ver la met
+        self.border_position ='izquierda'                
+        movimientos = self.armarDictDirecciones()       
         see_goal = self.seeTheGoal()
         
         while not see_goal and valid_moves:
-            # print(self.board)
             
+           
             see_goal = self.seeTheGoal()
-            
-            #direccion de movimientos 
+                        
             movimientos = self.armarDictDirecciones()
             self.setMovimientosValidos()  
-            # decidir proximo lugar segun logicas
-            # self.remove_movement(self.from_move)
+           
             self.actual_move = self.chooseNextMove()
             valid_moves = self.thereIsValidMoves()
+            
             if self.actual_move  and valid_moves:
-                # self.guardarNodoAdnMoves()
+                
                 self.remove_movement(self.actual_move)
-                to_row , to_col =  movimientos[ self.actual_move ]
-                # mover el peon a la posicion
+                to_row , to_col =  movimientos[ self.actual_move ]                
                 self.move(to_row , to_col)
 
             valid_moves = self.thereIsValidMoves()
             
-            # verificacion de borde cerrado
+        
         
         return see_goal and valid_moves   
     

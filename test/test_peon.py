@@ -502,8 +502,11 @@ class  TestPeones( unittest.TestCase):
         result = [  i[0] for i  in  result.items() if i[1]]        
         self.assertEqual(['atras-obl-1', 'izquierda'], result)
   
-
+    
     # endregion
+    
+    
+    
     
 if __name__ == '__main__':
     # print(os.getcwd())

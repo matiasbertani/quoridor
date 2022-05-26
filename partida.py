@@ -64,7 +64,7 @@ class Partida:
     def print_board(self):
         """show the boar normalized
         """
-        print('='*17)
+        print('='*17+"    SIDE : "+self.side)
         if self.side == 'S': board = np.flipud(self.np_board)
         else:board = self.np_board 
         for row in board :print( ''.join(list(row)))
@@ -102,19 +102,11 @@ class Partida:
     def getEnemysPawns(self):
         
         return [ [int(i),int(j)] for i,j in zip(*np.where( self.np_board == self.opposite )) ]
-    
-    def getEnemysPawns_2(self):
-        
-        
-        return [ Peon(int(i),int(j),self.flipBoard(self.np_board),self.opposite ) for i,j in zip(*np.where( self.np_board == self.opposite )) ]
- 
-     
-    
+  
+
     def calcularOpciones(self):
-        # self.data_actual = data
-        # DETECTAR TODOS LOS PEONES MIOS
-        self.peones = self.getPawns()
-        # PARA CADA PEON
+        
+        self.peones = self.getPawns()        
         self.mejores_opciones = {}
         for i,peon in enumerate(self.peones):
                     
@@ -129,9 +121,6 @@ class Partida:
         
         for i,peon in enumerate(pawns):
         
-        # p_row,p_col = peon.ubicacionPeon()
-        # if (p_row != 16 and peon.side == 'N') or (p_row != 0 and peon.side == 'S'):
-        
             if peon.hay_movimientos_validos:
                 mov,puntos = peon.mejorMovimiento()   
                 move_options[i] = [mov,puntos]
@@ -141,16 +130,12 @@ class Partida:
 
     
     def elegirMejorMovimiento(self):
-        
-        # if self.walls_restantes>0:
-        #     move_wall , w_row, w_col = self.putHorizontalWall()
-        #     if move_wall :
-        #         w_row, w_col = Wall.getWallCordinates(w_row, w_col,self.side)                
-        #         return WallAction(self.data_actual,w_row, w_col,'h').to_dict()
-        if randint(0,5)>0:
-            move_wall, action = self.wallManagement()
-            if move_wall: return action
             
+        
+        move_wall, action = self.wallManagement()
+        if move_wall: return action
+        
+        self.calcularOpciones()  
         if randint(0, 6) > 0 : id_peon = -1
         
         else:
@@ -193,29 +178,7 @@ class Partida:
                             
         return   poner_wall, w_row, w_col
       
-      
-      
-                        
-    def calculateEnemyOptions(self):
-        
-        # get enemies pawns
-        self.enemy_pawns = self.getEnemysPawns_2(self.opposite)
-        # calculate best move for every pawn
-        enemy_moves = self.calculateMoves(self.enemy_pawns)
-        pawn_index, [best_move,puntaje]  = enemy_moves[-1]
-        
-                
-        
-        
-        pass
-    
-    def pawnsCloseToGoal(self) -> list:
-        # True or False if the enemy awns is one step to the goal
-        self.enemy_pawns = self.getEnemysPawns_2(self.opposite)
-        
-        close_to_goal = [ pawn for pawn in self.enemy_pawns if pawn.row == 14]
-        return close_to_goal
-     
+
      
     def wallManagement(self):
         
@@ -226,11 +189,11 @@ class Partida:
         self.empty_wall_places = Wall.getEmptyWallPlaces(self.np_board.copy())
         
         if self.walls_restantes:
-            
-            move_wall , w_row, w_col = self.putHorizontalWall()
-            if move_wall: 
-                w_row, w_col = Wall.getWallCordinates(w_row, w_col,self.side)                
-                return move_wall, WallAction(self.data_actual,w_row, w_col,'h').to_dict()
+            if randint(0,7)>0:
+                move_wall , w_row, w_col = self.putHorizontalWall()
+                if move_wall: 
+                    w_row, w_col = Wall.getWallCordinates(w_row, w_col,self.side)                
+                    return move_wall, WallAction(self.data_actual,w_row, w_col,'h').to_dict()
             
             move_wall , w_row, w_col = self.putVerticalWall() 
             if move_wall: 
@@ -252,14 +215,7 @@ class Partida:
                      
         return Move(self.data_actual,from_row_2, from_col_2, to_row_2, to_col_2).to_dict() 
  
-    
-    def findEnemyPawn(self, pawn_psotion):
-        #give the position of the pawn that was in rg psition given and return the new position
-        
-        #this is usefull when you want to put in cage a enemy pawn and moves
-        
-        pass
-    
+   
     def inTheWallLimit(self):
         
         #True or False if the enemy pawn is in the Horiontal Limit
