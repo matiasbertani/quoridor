@@ -1,8 +1,5 @@
 import sys
 from pathlib import Path
-
-from pandas import array
-
 file = Path(__file__).resolve()
 parent = file.parent.parent
 sys.path.append(str(parent))

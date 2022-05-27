@@ -1,9 +1,8 @@
 import traceback
-from matplotlib import testing
+
 import websockets
 import asyncio
 import json
-import numpy as np
 import sys
 from partida import Partida
 import time

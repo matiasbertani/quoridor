@@ -1,5 +1,4 @@
-from datetime import datetime
-from random import choice, shuffle, randint
+from random import  randint
 from actions import *
 from peon import Peon
 from wall import Wall
