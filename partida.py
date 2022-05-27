@@ -104,7 +104,7 @@ class Partida:
         return [ [int(i),int(j)] for i,j in zip(*np.where( self.np_board == self.opposite )) ]
   
 
-    def calcularOpciones(self):
+    def calculateMoves(self):
         
         self.peones = self.getPawns()        
         self.mejores_opciones = {}
@@ -116,18 +116,6 @@ class Partida:
            
         return len(self.mejores_opciones)
 
-    def calculateMoves(self, pawns) -> dict:
-        move_options = {}
-        
-        for i,peon in enumerate(pawns):
-        
-            if peon.hay_movimientos_validos:
-                mov,puntos = peon.mejorMovimiento()   
-                move_options[i] = [mov,puntos]
-        # sort from low to high
-        move_options = sorted(move_options.items(),  key= lambda x: x[1][1] )
-        return move_options
-
     
     def elegirMejorMovimiento(self):
             
@@ -135,7 +123,7 @@ class Partida:
         move_wall, action = self.wallManagement()
         if move_wall: return action
         
-        self.calcularOpciones()  
+        self.calculateMoves()  
         if randint(0, 6) > 0 : id_peon = -1
         
         else:
@@ -214,35 +202,7 @@ class Partida:
         to_row_2, to_col_2 = int(to_row/2), int(to_col/2)
                      
         return Move(self.data_actual,from_row_2, from_col_2, to_row_2, to_col_2).to_dict() 
- 
-   
-    def inTheWallLimit(self):
-        
-        #True or False if the enemy pawn is in the Horiontal Limit
-        pass
-     
-    def chooseAction(self):
-        
-        # calcular movimientos MIS PEONES
-        
-        # calcular movimiento PEONES ENEMIGOS
-        
-        # si hay peon enemigo a punto de llegar a lameta.
-            # SI ES POSIBLE ENJAULAR:
-                # retornar enjaular
-        
-        
-        # COMPARAR MI MEJOR MOVIMIENTO CON ENEMIGO:
-            # si el es mayo o igual :
-                # si es posible poner wall: # frenar e intetar enjaular
-            #caso contrario mover mi mejor peon.
 
-        
-        
-        
-        
-        pass 
-    
     
     def putVerticalWall(self):
         
@@ -274,107 +234,3 @@ class Partida:
         
         return put_wall, wall_row, wall_col
     
-def armar_tablero_str() ->str:
-    # tablero_str = ' '*289
-    # tablero_np = np.array(  list(tablero_str) ).reshape(17,17)
-    
-    
-    # for posiciones, peon_side in zip(peones, ['N','S']):
-    #     for i,j in posiciones:
-    #             tablero_np[i][j] = peon_side
-                
-    table = np.array([
-        # 0    1    2    3    4    5    6    7    8    9   10   11   12  13   14   15   16    
-        [' ', ' ', 'N', ' ', ' ', ' ', ' ', ' ', 'N', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 0
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 1
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 2
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 3
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 4
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 5
-        [' ', ' ', ' ', ' ', ' ', ' ', 'S', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 6
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 7
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', 'N', ' ', ' '], # 8
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', '-', '*', '-'], # 9
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 10
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 11
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 12
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 13
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 14
-        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' '], # 15
-        [' ', ' ', 'S', ' ', 'S', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',' ', ' ', ' ', ' ']] # 16
-            
-            )        
-                
-                
-        
-    return ''.join(list(table.reshape(289)))
-            
-def getData(side,tablero_str): 
-    return {
-                "event": "your_turn",
-                "data": {
-                    "player_2": "uno",
-                    "player_1": "dos",
-                    "score_2": 0.0,
-                    "walls": 10.0,
-                    "score_1": 0.0,
-                    "side": side,
-                    "remaining_moves": 200,
-                    "board": tablero_str,
-                    "turn_token": "tokencito",
-                    "game_id": "ab16e71c-caeb-11eb-975e-0242c0a80004"
-                }
-            }
-    
-
-    
-def test_avance_inteligente_peon(side='N'):
-    """Priebas de bot off-line miviendo hacia delante
-    """
-    
-    
-    tablero_str = armar_tablero_str()    
-    data = getData(side,tablero_str)
-    
-    
-    partidita = Partida(data['data'])
-    testeando = True        
-    while testeando:
-        
-        testeando, board = partidita.testmoverPeon(data['data'])
-
-        data['data']['board'] = board
-        
-
-def multiples_peones_inteligentes(side='S'):
-    tablero_str = armar_tablero_str()    
-    data = getData(side,tablero_str)
-    
-    
-    partidita = Partida(data['data'])
-    testeando = True        
-    while testeando:
-        
-        testeando = False
-        t1 = datetime.now()
-        partidita.actualizar_data(data['data'])
-        if partidita.calcularOpciones():
-            testeando, board = partidita.elegirMejorMovimiento()
-            
-            
-            time.sleep(0.1)
-            partidita.np_board = None
-        
-        data['data']['board'] = board
-        print('tiempo:',datetime.now() -t1 )
-  
-    
-
-
-
-
-
-if __name__ == '__main__':
-    # test_avance_inteligente_peon()
-    multiples_peones_inteligentes('N')
-    pass
