@@ -31,4 +31,4 @@ Class that interprets the wall, tells us if the move to place a certain learning
 Class responsible for "scanning" the board to validate if the placement of a wall is a move that encloses any of the pawns on the board
 
 
-[![CircleCI](https://circleci.com/gh/matiasbertani/quoridor/tree/main.svg?style=svg)](https://circleci.com/gh/matiasbertani/quoridor/tree/main)
+[![CircleCI](https://circleci.com/gh/matiasbertani/quoridor/tree/master.svg?style=svg)](https://circleci.com/gh/matiasbertani/quoridor/tree/master)
