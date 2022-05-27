@@ -325,35 +325,7 @@ class TestWall(unittest.TestCase):
         self.assertEqual(False, result)
 
 
-    # region ----- TEST si hay ENCERRAMIENTO 
-
-        # caso de cerrar un peon con una barra horizontal
-    
-        # caso de encerrar un pon en un casillero chiqiuito
-        
-        # caso de encerrar un peon en un esquin
-        
-        # caso de encerrar con una barra vertical en una esquina
-        
-        # caso de encerrar con un aforma no cuadrada
-        
-        # caso de generar un pasilllo no cerrado 
-    
-    
-    # endregion   ------------------------------  
-
-    
-    # region ----- TEST WALL COLOCATION INTO BOARD
-    
-    
-    
-
-    
-    
-    # endregion   ------------------------------  
-    
-    
-    
+ 
     
     
   
